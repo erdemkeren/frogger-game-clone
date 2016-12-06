@@ -127,7 +127,7 @@ var Engine = (function(global) {
         if (stateMachine.state.getCurrent() === stateMachine.states.lost) {
             lives.decrese();
 
-            if(lives.count() <= 0) {
+            if (lives.count() <= 0) {
                 // If the user has lost the game, we make the
                 // enemies sprint to annoy the user.
                 sprintEnemies(false);
@@ -149,7 +149,7 @@ var Engine = (function(global) {
         // If the game is finished and the previous state is lost,
         // we set a timer to reset the the game. Gameover text
         // will also be rendered.
-        if((stateMachine.state.getCurrent() === stateMachine.states.fin) && stateMachine.state.getPrevious() === stateMachine.states.lost) {
+        if ((stateMachine.state.getCurrent() === stateMachine.states.fin) && stateMachine.state.getPrevious() === stateMachine.states.lost) {
             setTimeout(function() {
                 reset();
             }, 1000);
@@ -324,7 +324,7 @@ var Engine = (function(global) {
         lives.reset();
         level.reset();
         player.reset();
-        
+
         stateMachine.state.change(stateMachine.states.waiting);
     }
 
