@@ -1,6 +1,23 @@
-frontend-nanodegree-arcade-game
-===============================
+# frontend-nanodegree-arcade-game
 
-Students should use this [rubric](https://review.udacity.com/#!/projects/2696458597/rubric) for self-checking their submission. Make sure the functions you write are **object-oriented** - either class functions (like Player and Enemy) or class prototype functions such as Enemy.prototype.checkCollisions, and that the keyword 'this' is used appropriately within your class and class prototype functions to refer to the object the function is called upon. Also be sure that the **readme.md** file is updated with your instructions on both how to 1. Run and 2. Play your arcade game.
+## Contents
 
-For detailed instructions on how to get started, check out this [guide](https://docs.google.com/document/d/1v01aScPjSWCCWQLIpFqvg3-vXLH2e8_SZQKC8jNO0Dc/pub?embedded=true).
+- [Run](#run)
+- [Play](#play)
+    - [Keys](#keys) 
+    - [Gameplay](#gameplay) 
+
+## Run
+The game requires zero configuration to run. Simply download or clone the game to you local environment and open `index.html` in your favorite browser.
+## Play
+To play the game, you need a keyboard. This game doesn't support touch screens.
+#### Keys:
+  &#8594; (Right arrow): Move the hero right.
+  &#8592; (Left arrow): Move the hero left.
+  &#8593; (Up arrow): Move the hero up.
+  &#8595; (Down arrow): Move the hero down.
+#### Gameplay:
+  You have 3 lives to reach to water. Avoid the bugs and don't get stuck in the rocks. And, have fun!
+  
+    
+
