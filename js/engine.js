@@ -23,7 +23,10 @@ var Engine = (function(global) {
         win = global.window,
         canvas = doc.createElement('canvas'),
         ctx = canvas.getContext('2d'),
-        lastTime;
+        level = 5,
+        collisionDetected = false,
+        counterInterval,
+        lastTime = 0;
 
     canvas.width = 505;
     canvas.height = 606;
@@ -41,6 +44,11 @@ var Engine = (function(global) {
          */
         var now = Date.now(),
             dt = (now - lastTime) / 1000.0;
+
+        /* Call our updateState and prepare functions respectively to 
+         * update the current state of our game.
+         */
+        prepareScene();
 
         /* Call our update/render functions, pass along the time delta to
          * our update function since it may be used for smooth animation.
@@ -69,6 +77,77 @@ var Engine = (function(global) {
         main();
     }
 
+    /* This function syncs the game, the states and the scene.
+     */
+    function prepareScene() {
+        // If the current state is before start, we create the enemies.
+        if(stateMachine.state.getCurrent() === stateMachine.states.beforeStart) {
+            createEnemies();
+            stateMachine.state.change(stateMachine.states.starting);
+        }
+
+        if(stateMachine.state.getCurrent() === stateMachine.states.starting) {
+            // If the current state is starting, we start a counter to
+            // give some space for bugs to spread.
+            if(! counter.isActive()) {
+                counter.activate();
+                counterInterval = setInterval(function() {
+                    counter.count();
+                }, 1000);
+            }
+
+            // If the counter is ended, we start the game.
+            if(counter.getCount() === 0) {
+                stateMachine.state.change(stateMachine.states.running);   
+            }
+        }
+
+        if(counter.isActive()) {
+            // If the counter is -1, that means we showed
+            // the 'Go!' text for one second. It is time
+            // to clear the interval and reset the counter.
+            if(counter.getCount() <= -1) {
+                window.clearInterval(counterInterval);
+                counter.reset();
+            }
+        }
+
+        if(player.row === 0) {
+            stateMachine.state.change(stateMachine.states.won);
+        }
+
+        // If the user has lost the game, we make the
+        // enemies sprint to annoy the user.
+        if(stateMachine.state.getCurrent() === stateMachine.states.lost) {
+            sprintEnemies(false);
+            stateMachine.state.change(stateMachine.states.fin);
+        }
+
+        // If the user has won the game, we again
+        // make the enemies spring but that time
+        // they will not respawn.
+        if(stateMachine.state.getCurrent() === stateMachine.states.won) {
+            sprintEnemies(true);
+            stateMachine.state.change(stateMachine.states.fin);
+        }
+    }
+
+    /* This function make the enemies sprint. Is called by the
+     * prepare when the game is lost or won by the player. If
+     * kill is set to true, enemies will not respawn after
+     * they leave the viewport of the user and be deleted.
+     */
+    function sprintEnemies(kill)
+    {
+        allEnemies.forEach(function(enemy) {
+            enemy.sprint();
+
+            if(kill) {
+                enemy.kill();
+            }
+        });
+    }
+
     /* This function is called by main (our game loop) and itself calls all
      * of the functions which may need to update entity's data. Based on how
      * you implement your collision detection (when two entities occupy the
@@ -80,7 +159,21 @@ var Engine = (function(global) {
      */
     function update(dt) {
         updateEntities(dt);
-        // checkCollisions();
+
+        if(stateMachine.state.getCurrent() === stateMachine.states.running) {
+            checkCollisions();
+        }
+    }
+
+    /* This function creates level * 3 + 1 enemies.
+     * E.g. If the current level is 1, 3 enemies
+     * will be created.
+     */
+    function createEnemies()
+    {
+        for(var i = 0; i < level * 2 + 1; i++) {
+            EnemyFactory.create();
+        }
     }
 
     /* This is called by the update function and loops through all of the
@@ -94,7 +187,27 @@ var Engine = (function(global) {
         allEnemies.forEach(function(enemy) {
             enemy.update(dt);
         });
+
         player.update();
+    }
+
+    /* 
+     * Check the collision to the player.
+     */
+    function checkCollisions() {
+        allEnemies.forEach(function(enemy) {
+            var enemyStart = enemy.x;
+            var EnemyEnd = enemy.x + 101;
+            var playerStart = player.x + 20; // +20 to feel better.
+            var playerEnd = player.x + 81; // 101 - 20 to feel better.
+            var sameRow = player.row === enemy.row;
+            var touch = (EnemyEnd >= playerStart && EnemyEnd <= playerEnd) || (enemyStart >= playerStart && enemyStart <= playerEnd);
+
+            if(sameRow && touch) {
+                console.log('Collision!');
+                stateMachine.state.change(stateMachine.states.lost);
+            }
+        });
     }
 
     /* This function initially draws the "game level", it will then call
@@ -148,10 +261,20 @@ var Engine = (function(global) {
          * the render function you have defined.
          */
         allEnemies.forEach(function(enemy) {
-            enemy.render();
+            enemy.render(ctx);
         });
 
-        player.render();
+        if(stateMachine.state.getCurrent() !== stateMachine.states.waiting) {
+            player.render(ctx);
+        }
+
+        if(stateMachine.state.getCurrent() === stateMachine.states.waiting) {
+            waitingText.render(ctx);
+        }
+
+        if(counter.isActive()) {
+            counter.render(ctx);
+        }
     }
 
     /* This function does nothing but it could have been a good place to
@@ -171,13 +294,8 @@ var Engine = (function(global) {
         'images/water-block.png',
         'images/grass-block.png',
         'images/enemy-bug.png',
-        'images/char-boy.png'
+        'images/char-boy.png',
+        'images/char-princess-girl.png'
     ]);
     Resources.onReady(init);
-
-    /* Assign the canvas' context object to the global variable (the window
-     * object when run in a browser) so that developers can use it more easily
-     * from within their app.js files.
-     */
-    global.ctx = ctx;
 })(this);
