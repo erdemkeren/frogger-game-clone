@@ -23,7 +23,6 @@ var Engine = (function(global) {
         win = global.window,
         canvas = doc.createElement('canvas'),
         ctx = canvas.getContext('2d'),
-        level = 5,
         collisionDetected = false,
         counterInterval,
         lastTime = 0;
@@ -45,10 +44,9 @@ var Engine = (function(global) {
         var now = Date.now(),
             dt = (now - lastTime) / 1000.0;
 
-        /* Call our updateState and prepare functions respectively to 
-         * update the current state of our game.
+        /* Update the current state of our game.
          */
-        prepareScene();
+        sync();
 
         /* Call our update/render functions, pass along the time delta to
          * our update function since it may be used for smooth animation.
@@ -79,17 +77,19 @@ var Engine = (function(global) {
 
     /* This function syncs the game, the states and the scene.
      */
-    function prepareScene() {
+    function sync() {
         // If the current state is before start, we create the enemies.
-        if(stateMachine.state.getCurrent() === stateMachine.states.beforeStart) {
+        if (stateMachine.state.getCurrent() === stateMachine.states.beforeStart) {
             createEnemies();
+            allRocks = [];
+            createRocks();
             stateMachine.state.change(stateMachine.states.starting);
         }
 
-        if(stateMachine.state.getCurrent() === stateMachine.states.starting) {
+        if (stateMachine.state.getCurrent() === stateMachine.states.starting) {
             // If the current state is starting, we start a counter to
             // give some space for bugs to spread.
-            if(! counter.isActive()) {
+            if (!counter.isActive()) {
                 counter.activate();
                 counterInterval = setInterval(function() {
                     counter.count();
@@ -97,28 +97,37 @@ var Engine = (function(global) {
             }
 
             // If the counter is ended, we start the game.
-            if(counter.getCount() === 0) {
-                stateMachine.state.change(stateMachine.states.running);   
+            if (counter.getCount() === 0) {
+                stateMachine.state.change(stateMachine.states.running);
             }
         }
 
-        if(counter.isActive()) {
+        if (counter.isActive()) {
             // If the counter is -1, that means we showed
             // the 'Go!' text for one second. It is time
             // to clear the interval and reset the counter.
-            if(counter.getCount() <= -1) {
+            if (counter.getCount() <= -1) {
                 window.clearInterval(counterInterval);
                 counter.reset();
             }
         }
 
-        if(player.row === 0) {
+        // If the user managed to reach the row 0,
+        // that means he won the level and 
+        // levelled up!
+        if (player.row === 0 && stateMachine.state.getCurrent() === stateMachine.states.running) {
             stateMachine.state.change(stateMachine.states.won);
+            counterInterval = setInterval(function() {
+                player.reset();
+                level.up();
+                stateMachine.state.change(stateMachine.states.beforeStart);
+                window.clearInterval(counterInterval);
+            }, 1000);
         }
 
         // If the user has lost the game, we make the
         // enemies sprint to annoy the user.
-        if(stateMachine.state.getCurrent() === stateMachine.states.lost) {
+        if (stateMachine.state.getCurrent() === stateMachine.states.lost) {
             sprintEnemies(false);
             stateMachine.state.change(stateMachine.states.fin);
         }
@@ -126,7 +135,7 @@ var Engine = (function(global) {
         // If the user has won the game, we again
         // make the enemies spring but that time
         // they will not respawn.
-        if(stateMachine.state.getCurrent() === stateMachine.states.won) {
+        if (stateMachine.state.getCurrent() === stateMachine.states.won) {
             sprintEnemies(true);
             stateMachine.state.change(stateMachine.states.fin);
         }
@@ -137,12 +146,11 @@ var Engine = (function(global) {
      * kill is set to true, enemies will not respawn after
      * they leave the viewport of the user and be deleted.
      */
-    function sprintEnemies(kill)
-    {
+    function sprintEnemies(kill) {
         allEnemies.forEach(function(enemy) {
             enemy.sprint();
 
-            if(kill) {
+            if (kill) {
                 enemy.kill();
             }
         });
@@ -160,19 +168,28 @@ var Engine = (function(global) {
     function update(dt) {
         updateEntities(dt);
 
-        if(stateMachine.state.getCurrent() === stateMachine.states.running) {
+        if (stateMachine.state.getCurrent() === stateMachine.states.running) {
             checkCollisions();
         }
     }
 
-    /* This function creates level * 3 + 1 enemies.
+    /* This function creates level + 2 enemies.
      * E.g. If the current level is 1, 3 enemies
      * will be created.
      */
-    function createEnemies()
-    {
-        for(var i = 0; i < level * 2 + 1; i++) {
+    function createEnemies() {
+        for (var i = 0; i < level.get() + 2; i++) {
             EnemyFactory.create();
+        }
+    }
+
+    /* This function creates level / 5 rocks.
+     * E.g. If the current level is 10, 2 rocks
+     * will be created.
+     */
+    function createRocks() {
+        for (var i = 0; i < Math.floor(level.get() / 3); i++) {
+            RockFactory.create();
         }
     }
 
@@ -203,7 +220,7 @@ var Engine = (function(global) {
             var sameRow = player.row === enemy.row;
             var touch = (EnemyEnd >= playerStart && EnemyEnd <= playerEnd) || (enemyStart >= playerStart && enemyStart <= playerEnd);
 
-            if(sameRow && touch) {
+            if (sameRow && touch) {
                 console.log('Collision!');
                 stateMachine.state.change(stateMachine.states.lost);
             }
@@ -221,12 +238,12 @@ var Engine = (function(global) {
          * for that particular row of the game level.
          */
         var rowImages = [
-                'images/water-block.png',   // Top row is water
-                'images/stone-block.png',   // Row 1 of 3 of stone
-                'images/stone-block.png',   // Row 2 of 3 of stone
-                'images/stone-block.png',   // Row 3 of 3 of stone
-                'images/grass-block.png',   // Row 1 of 2 of grass
-                'images/grass-block.png'    // Row 2 of 2 of grass
+                'images/water-block.png', // Top row is water
+                'images/stone-block.png', // Row 1 of 3 of stone
+                'images/stone-block.png', // Row 2 of 3 of stone
+                'images/stone-block.png', // Row 3 of 3 of stone
+                'images/grass-block.png', // Row 1 of 2 of grass
+                'images/grass-block.png' // Row 2 of 2 of grass
             ],
             numRows = 6,
             numCols = 5,
@@ -257,22 +274,24 @@ var Engine = (function(global) {
      * on your enemy and player entities within app.js
      */
     function renderEntities() {
-        /* Loop through all of the objects within the allEnemies array and call
-         * the render function you have defined.
-         */
         allEnemies.forEach(function(enemy) {
             enemy.render(ctx);
         });
 
-        if(stateMachine.state.getCurrent() !== stateMachine.states.waiting) {
+        allRocks.forEach(function(rock) {
+            rock.render(ctx);
+        });
+
+        if (stateMachine.state.getCurrent() !== stateMachine.states.waiting) {
             player.render(ctx);
+            level.render(ctx);
         }
 
-        if(stateMachine.state.getCurrent() === stateMachine.states.waiting) {
+        if (stateMachine.state.getCurrent() === stateMachine.states.waiting) {
             waitingText.render(ctx);
         }
 
-        if(counter.isActive()) {
+        if (counter.isActive()) {
             counter.render(ctx);
         }
     }
@@ -295,7 +314,8 @@ var Engine = (function(global) {
         'images/grass-block.png',
         'images/enemy-bug.png',
         'images/char-boy.png',
-        'images/char-princess-girl.png'
+        'images/char-princess-girl.png',
+        'images/Rock.png'
     ]);
     Resources.onReady(init);
 })(this);

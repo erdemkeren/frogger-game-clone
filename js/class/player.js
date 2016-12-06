@@ -1,42 +1,64 @@
-/*
- *----------------------------------------------------
- * The player.
- *----------------------------------------------------
- *
- * This is our player.
- *
- */
+(function(global) {
+    /*
+     *----------------------------------------------------
+     * The player.
+     *----------------------------------------------------
+     *
+     * This is our player.
+     *
+     */
+    var Player = function() {
+        // The image/sprite for our player.
+        this.sprite = 'images/char-princess-girl.png';
 
-var Player = function() {
+        // The grid coordinates of the player.
+        this.col = 2;
+        this.row = 5;
+    };
 
-    // The image/sprite for our player.
-    this.sprite = 'images/char-princess-girl.png';
+    // The player constructor.
+    Player.prototype.update = function(dt) {
+        this.x = this.col * 101;
+        this.y = (this.row * 83) - 20;
+    };
 
-    // The grid coordinates of the player.
-    this.col = 2;
-    this.row = 5;
-};
+    // Render the player in the game scene.
+    Player.prototype.render = function(ctx) {
+        ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+    };
 
-// The player constructor.
-Player.prototype.update = function(dt) {
-    this.x = this.col * 101;
-    this.y = (this.row * 83) - 20;
-};
+    // Handle the user input for the player.
+    Player.prototype.handleInput = function(keyCode) {
+        var canMove = true;
+        var nextCol = this.col;
+        var nextRow = this.row;
 
-// Render the player in the game scene.
-Player.prototype.render = function(ctx) {
-    ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-};
+        if (keyCode === 'down' && this.row < 5) {
+            nextRow++;
+        } else if (keyCode === 'up' && this.row > 0) {
+            nextRow--;
+        } else if (keyCode === 'right' && this.col < 4) {
+            nextCol++;
+        } else if (keyCode === 'left' && this.col > 0) {
+            nextCol--;
+        }
 
-// Handle the user input for the player.
-Player.prototype.handleInput = function(keyCode) {
-    if(keyCode === 'down' && this.row < 5) {
-        this.row++;
-    } else if(keyCode === 'up' && this.row > 0) {
-        this.row--;
-    } else if(keyCode === 'right' && this.col < 4) {
-        this.col++;
-    } else if(keyCode === 'left' && this.col > 0) {
-        this.col--;
-    }
-};
+        allRocks.forEach(function(rock) {
+            if ((rock.col === nextCol) && (rock.row === nextRow)) {
+                canMove = false;
+            }
+        });
+
+        if (canMove) {
+            this.col = nextCol;
+            this.row = nextRow;
+        }
+    };
+
+    Player.prototype.reset = function(keyCode) {
+        this.col = 2;
+        this.row = 5;
+    };
+
+    global.player = new Player();
+})(this);
