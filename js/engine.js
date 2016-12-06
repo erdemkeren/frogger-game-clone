@@ -152,7 +152,7 @@ var Engine = (function(global) {
         if ((stateMachine.state.getCurrent() === stateMachine.states.fin) && stateMachine.state.getPrevious() === stateMachine.states.lost) {
             setTimeout(function() {
                 reset();
-            }, 1000);
+            }, 3000);
         }
     }
 
@@ -311,6 +311,10 @@ var Engine = (function(global) {
 
         if (counter.isActive()) {
             counter.render(ctx);
+        }
+
+        if ((stateMachine.state.getCurrent() === stateMachine.states.fin) && stateMachine.state.getPrevious() === stateMachine.states.lost) {
+            gameOver.render(ctx);
         }
     }
 
