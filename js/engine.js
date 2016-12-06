@@ -117,19 +117,25 @@ var Engine = (function(global) {
         // levelled up!
         if (player.row === 0 && stateMachine.state.getCurrent() === stateMachine.states.running) {
             stateMachine.state.change(stateMachine.states.won);
-            counterInterval = setInterval(function() {
+            setTimeout(function() {
                 player.reset();
                 level.up();
                 stateMachine.state.change(stateMachine.states.beforeStart);
-                window.clearInterval(counterInterval);
             }, 1000);
         }
 
-        // If the user has lost the game, we make the
-        // enemies sprint to annoy the user.
         if (stateMachine.state.getCurrent() === stateMachine.states.lost) {
-            sprintEnemies(false);
-            stateMachine.state.change(stateMachine.states.fin);
+            lives.decrese();
+
+            if(lives.count() <= 0) {
+                // If the user has lost the game, we make the
+                // enemies sprint to annoy the user.
+                sprintEnemies(false);
+                stateMachine.state.change(stateMachine.states.fin);
+            } else {
+                player.reset();
+                stateMachine.state.change(stateMachine.states.running);
+            }
         }
 
         // If the user has won the game, we again
@@ -138,6 +144,15 @@ var Engine = (function(global) {
         if (stateMachine.state.getCurrent() === stateMachine.states.won) {
             sprintEnemies(true);
             stateMachine.state.change(stateMachine.states.fin);
+        }
+
+        // If the game is finished and the previous state is lost,
+        // we set a timer to reset the the game. Gameover text
+        // will also be rendered.
+        if((stateMachine.state.getCurrent() === stateMachine.states.fin) && stateMachine.state.getPrevious() === stateMachine.states.lost) {
+            setTimeout(function() {
+                reset();
+            }, 1000);
         }
     }
 
@@ -249,6 +264,8 @@ var Engine = (function(global) {
             numCols = 5,
             row, col;
 
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
         /* Loop through the number of rows and columns we've defined above
          * and, using the rowImages array, draw the correct image for that
          * portion of the "grid"
@@ -285,6 +302,7 @@ var Engine = (function(global) {
         if (stateMachine.state.getCurrent() !== stateMachine.states.waiting) {
             player.render(ctx);
             level.render(ctx);
+            lives.render(ctx);
         }
 
         if (stateMachine.state.getCurrent() === stateMachine.states.waiting) {
@@ -301,7 +319,13 @@ var Engine = (function(global) {
      * those sorts of things. It's only called once by the init() method.
      */
     function reset() {
-        // noop
+        allEnemies = [];
+        allRocks = [];
+        lives.reset();
+        level.reset();
+        player.reset();
+        
+        stateMachine.state.change(stateMachine.states.waiting);
     }
 
     /* Go ahead and load all of the images we know we're going to need to
@@ -315,7 +339,8 @@ var Engine = (function(global) {
         'images/enemy-bug.png',
         'images/char-boy.png',
         'images/char-princess-girl.png',
-        'images/Rock.png'
+        'images/Rock.png',
+        'images/heart-scaled.png'
     ]);
     Resources.onReady(init);
 })(this);
