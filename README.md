@@ -1,4 +1,4 @@
-# frontend-nanodegree-arcade-game
+# Frogger game clone
 
 ## Contents
 
